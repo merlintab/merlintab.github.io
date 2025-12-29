@@ -1,0 +1,186 @@
+<installable appname="YouTube"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+        }
+
+        .logo {
+            height: 32px;
+            cursor: pointer;
+        }
+
+        .videos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+            padding: 24px;
+        }
+
+        .video img {
+            width: 100%;
+            display: block;
+        }
+
+        .title {
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .search {
+            padding: 8px 10px;
+            border: none;
+            background-color: #000;
+            color: #fff;
+        }
+
+        .player {
+            position: fixed;
+            inset: 0;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .player.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .back {
+            color: red;
+            padding: 16px 24px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .player iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <svg id="logo" class="logo" viewBox="409.289 277.787 512 114.301" xmlns="http://www.w3.org/2000/svg">
+            <g transform="matrix(5.715038, 0, 0, 5.715038, 409.288757, 277.787231)">
+                <path d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 0 14.285 0 14.285 0C14.285 0 5.35042 0 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C0 5.35042 0 10 0 10C0 10 0 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z" fill="#FF0000"/>
+                <path d="M11.4253 14.2854L18.8477 10.0004L11.4253 5.71533V14.2854Z" fill="white"/>
+            </g>
+        </svg>
+
+        <input
+            id="searchInput"
+            class="search"
+            type="text"
+            placeholder="Search"
+        >
+    </div>
+
+    <div id="videos" class="videos"></div>
+
+    <div id="player" class="player">
+        <div id="back" class="back">Back [ESC]</div>
+        <iframe id="iframe" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        const videosContainer = document.getElementById("videos");
+        const searchInput = document.getElementById("searchInput");
+        const logo = document.getElementById("logo");
+        const player = document.getElementById("player");
+        const iframe = document.getElementById("iframe");
+        const back = document.getElementById("back");
+
+        function renderVideos(items) {
+            videosContainer.innerHTML = "";
+
+            items.forEach(item => {
+                const videoId = item.id.videoId || item.id;
+                const title = item.snippet.title;
+                const thumbnail = item.snippet.thumbnails.medium.url;
+
+                const div = document.createElement("div");
+                div.className = "video";
+
+                div.innerHTML = `
+                    <img src="${thumbnail}">
+                    <div class="title">${title}</div>
+                `;
+
+                div.onclick = () => openPlayer(videoId);
+
+                videosContainer.appendChild(div);
+            });
+        }
+
+        function loadTrending() {
+            fetch(
+                "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=24&key=AIzaSyAxMRxshEh3_VtrMGIiyQ3jF4i37Y5M9d4"
+            )
+            .then(r => r.json())
+            .then(d => renderVideos(d.items));
+        }
+
+        function searchVideos(query) {
+            fetch(
+                "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=24&q=" +
+                encodeURIComponent(query) +
+                "&key=AIzaSyAxMRxshEh3_VtrMGIiyQ3jF4i37Y5M9d4"
+            )
+            .then(r => r.json())
+            .then(d => renderVideos(d.items));
+        }
+
+        function openPlayer(id) {
+            iframe.src = "https://www.youtube.com/embed/" + id + "?autoplay=1";
+            player.classList.add("active");
+        }
+
+        function closePlayer() {
+            player.classList.remove("active");
+            iframe.src = "";
+        }
+
+        searchInput.addEventListener("keydown", e => {
+            if (e.key === "Enter" && searchInput.value.trim()) {
+                searchVideos(searchInput.value.trim());
+            }
+        });
+
+        logo.addEventListener("click", () => {
+            searchInput.value = "";
+            loadTrending();
+        });
+
+        back.addEventListener("click", closePlayer);
+
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape") {
+                closePlayer();
+            }
+        });
+
+        loadTrending();
+    </script>
+
+</body>
+</html></installable>
